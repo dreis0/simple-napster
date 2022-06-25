@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option go_package = ".";
+
+import "google/protobuf/empty.proto";
+import "protos/join_args.proto";
+
+service Napster {
+  rpc Join(JoinArgs) returns (google.protobuf.Empty) {}
+}

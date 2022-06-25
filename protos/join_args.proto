@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option go_package = ".";
+
+import "google/protobuf/empty.proto";
+
+message JoinArgs {
+  string IP = 1;
+  int32 port = 2;
+}
