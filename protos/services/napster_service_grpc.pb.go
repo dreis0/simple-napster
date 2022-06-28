@@ -25,6 +25,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NapsterClient interface {
 	Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Leave(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Search(ctx context.Context, in *messages.SearchArgs, opts ...grpc.CallOption) (*messages.SearchResponse, error)
+	Update(ctx context.Context, in *messages.UpdateArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type napsterClient struct {
@@ -44,11 +47,41 @@ func (c *napsterClient) Join(ctx context.Context, in *messages.JoinArgs, opts ..
 	return out, nil
 }
 
+func (c *napsterClient) Leave(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Napster/Leave", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *napsterClient) Search(ctx context.Context, in *messages.SearchArgs, opts ...grpc.CallOption) (*messages.SearchResponse, error) {
+	out := new(messages.SearchResponse)
+	err := c.cc.Invoke(ctx, "/Napster/Search", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *napsterClient) Update(ctx context.Context, in *messages.UpdateArgs, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Napster/Update", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NapsterServer is the server API for Napster service.
 // All implementations must embed UnimplementedNapsterServer
 // for forward compatibility
 type NapsterServer interface {
 	Join(context.Context, *messages.JoinArgs) (*emptypb.Empty, error)
+	Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Search(context.Context, *messages.SearchArgs) (*messages.SearchResponse, error)
+	Update(context.Context, *messages.UpdateArgs) (*emptypb.Empty, error)
 	mustEmbedUnimplementedNapsterServer()
 }
 
@@ -58,6 +91,15 @@ type UnimplementedNapsterServer struct {
 
 func (UnimplementedNapsterServer) Join(context.Context, *messages.JoinArgs) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
+}
+func (UnimplementedNapsterServer) Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
+}
+func (UnimplementedNapsterServer) Search(context.Context, *messages.SearchArgs) (*messages.SearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedNapsterServer) Update(context.Context, *messages.UpdateArgs) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedNapsterServer) mustEmbedUnimplementedNapsterServer() {}
 
@@ -90,6 +132,60 @@ func _Napster_Join_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Napster_Leave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NapsterServer).Leave(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Napster/Leave",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NapsterServer).Leave(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Napster_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(messages.SearchArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NapsterServer).Search(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Napster/Search",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NapsterServer).Search(ctx, req.(*messages.SearchArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Napster_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(messages.UpdateArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NapsterServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Napster/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NapsterServer).Update(ctx, req.(*messages.UpdateArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Napster_ServiceDesc is the grpc.ServiceDesc for Napster service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -100,6 +196,18 @@ var Napster_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Join",
 			Handler:    _Napster_Join_Handler,
+		},
+		{
+			MethodName: "Leave",
+			Handler:    _Napster_Leave_Handler,
+		},
+		{
+			MethodName: "Search",
+			Handler:    _Napster_Search_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _Napster_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

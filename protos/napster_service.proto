@@ -4,7 +4,13 @@ option go_package = ".";
 
 import "google/protobuf/empty.proto";
 import "protos/join_args.proto";
+import "protos/search_args.proto";
+import "protos/search_response.proto";
+import "protos/update_args.proto";
 
 service Napster {
   rpc Join(JoinArgs) returns (google.protobuf.Empty) {}
+  rpc Leave(google.protobuf.Empty) returns (google.protobuf.Empty){}
+  rpc Search(SearchArgs) returns (SearchResponse){}
+  rpc Update(UpdateArgs) returns (google.protobuf.Empty) {}
 }

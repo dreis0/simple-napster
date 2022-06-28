@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"simple-napster/dal"
 	services "simple-napster/protos/services"
 )
 
@@ -19,7 +20,7 @@ func main() {
 
 	port := args[1]
 	log.Printf("port: %s", port)
-	
+
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		panic(err)
@@ -28,10 +29,25 @@ func main() {
 	s := grpc.NewServer()
 	reflection.Register(s)
 
-	services.RegisterNapsterServer(s, NewNapsterService())
+	dal := createDal()
+	napsterServer := NewNapsterService(dal)
+	services.RegisterNapsterServer(s, napsterServer)
+
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
 	log.Printf("listening on port %s", args[1])
+}
+
+func createDal() dal.Dal {
+	config := &dal.Config{
+		Hostname: "localhost",
+		Port:     5432,
+		Password: "postgres",
+		Username: "postgres",
+		Database: "napster",
+	}
+	dal := dal.NewDal(config)
+	return dal
 }
