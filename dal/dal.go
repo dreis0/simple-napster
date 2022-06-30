@@ -14,7 +14,10 @@ type DalImpl struct {
 	db *bun.DB
 }
 
-func NewDal(config *Config) Dal {
+var _ ServerDal = (*DalImpl)(nil)
+var _ ClientDal = (*DalImpl)(nil)
+
+func NewDal(config *Config) ServerDal {
 
 	conn := pgdriver.NewConnector(
 		pgdriver.WithAddr(fmt.Sprintf("%s:%d", config.Hostname, config.Port)),

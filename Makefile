@@ -8,6 +8,10 @@ generate-protos:
 run-server:
 	@go run server/*.go ${PORT}
 
+run-peer:
+	@go run peer/*.go ${PORT}
+
 create-deps:
 	@docker-compose -f ${DOCKER_PATH} up -d
-	#TODO: create database bootstrap
+	@sleep 5
+	@go run deps/*.go

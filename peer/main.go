@@ -14,5 +14,6 @@ func main() {
 	portNum, _ := strconv.Atoi(port)
 
 	peer := NewNapsterPeer(&Config{ServerPort: 10098, SelfPort: portNum, ServerIp: "localhost"})
-	peer.RunClient()
+
+	peer.Run()
 }

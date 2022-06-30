@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	messages "simple-napster/protos/messages"
 	napsterProto "simple-napster/protos/services"
@@ -29,7 +31,25 @@ func NewNapsterPeer(config *Config) *NapsterPeer {
 	}
 }
 
-func (peer *NapsterPeer) RunClient() {
+func (peer *NapsterPeer) Run() {
+	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(2)
+
+	go func() {
+		defer waitGroup.Done()
+		peer.runServer()
+	}()
+	go func() {
+		defer waitGroup.Done()
+		peer.runClient()
+	}()
+
+	waitGroup.Wait()
+
+	fmt.Println("The peer has died")
+}
+
+func (peer *NapsterPeer) runClient() {
 	serverAddress := fmt.Sprintf("%s:%d", peer.config.ServerIp, peer.config.ServerPort)
 	conn, err := grpc.Dial(serverAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -42,7 +62,7 @@ func (peer *NapsterPeer) RunClient() {
 	ctx := context.Background()
 
 	for true {
-		fmt.Printf("Type your command")
+		fmt.Println("Type your command")
 		input := readInput(reader)
 		switch input {
 		case "JOIN":
@@ -58,8 +78,11 @@ func (peer *NapsterPeer) RunClient() {
 	}
 }
 
-func (peer *NapsterPeer) RunServer() {
-
+func (peer *NapsterPeer) runServer() {
+	for true {
+		fmt.Println("Server is alive")
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func readInput(reader *bufio.Reader) string {

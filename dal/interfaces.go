@@ -5,6 +5,9 @@ import (
 	"simple-napster/entities"
 )
 
-type Dal interface {
+type ServerDal interface {
 	AddPeer(ctx context.Context, peer *entities.Peer) error
+}
+
+type ClientDal interface {
 }

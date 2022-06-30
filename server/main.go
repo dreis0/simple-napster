@@ -40,7 +40,7 @@ func main() {
 	log.Printf("listening on port %s", args[1])
 }
 
-func createDal() dal.Dal {
+func createDal() dal.ServerDal {
 	config := &dal.Config{
 		Hostname: "localhost",
 		Port:     5432,

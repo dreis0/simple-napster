@@ -11,10 +11,10 @@ import (
 
 type NapsterServer struct {
 	services.UnimplementedNapsterServer
-	dal dal.Dal
+	dal dal.ServerDal
 }
 
-func NewNapsterService(dal dal.Dal) *NapsterServer {
+func NewNapsterService(dal dal.ServerDal) *NapsterServer {
 	return &NapsterServer{dal: dal}
 }
 
