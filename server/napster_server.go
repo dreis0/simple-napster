@@ -1,34 +1,27 @@
 package main
 
 import (
-	"context"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"simple-napster/dal"
-	"simple-napster/entities"
-	messages "simple-napster/protos/messages"
-	services "simple-napster/protos/services"
+	"sync"
 )
 
 type NapsterServer struct {
-	services.UnimplementedNapsterServer
-	dal dal.ServerDal
+	server *NapsterServerListener
 }
 
-func NewNapsterService(dal dal.ServerDal) *NapsterServer {
-	return &NapsterServer{dal: dal}
+func NewNapsterServer(dal dal.ServerDal, port int) *NapsterServer {
+	// TODO: instantiate keep alive client
+	return &NapsterServer{
+		server: NewNapsterServerListener(&NapsterServerListenerConfig{Port: port}, dal),
+	}
 }
 
-func (s *NapsterServer) Join(ctx context.Context, args *messages.JoinArgs) (*emptypb.Empty, error) {
-	peer := &entities.Peer{
-		Port:   args.Port,
-		Active: true,
-		IP:     args.IP,
-	}
-	err := s.dal.AddPeer(ctx, peer)
+func (s *NapsterServer) Start() {
+	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &emptypb.Empty{}, nil
+	go func() {
+		s.server.Start()
+		waitGroup.Done()
+	}()
 }

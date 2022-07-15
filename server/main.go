@@ -2,15 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"log"
-	"net"
 	"os"
 	"simple-napster/dal"
-	services "simple-napster/protos/services"
-	"sync"
+	"strconv"
 	"time"
 )
 
@@ -21,38 +16,16 @@ func main() {
 		panic("no port provided")
 	}
 
-	port := args[1]
-	log.Printf("port: %s", port)
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	port, err := strconv.Atoi(args[1])
 	if err != nil {
 		panic(err)
 	}
-
-	s := grpc.NewServer()
-	reflection.Register(s)
+	log.Printf("port: %s", port)
 
 	dal := createDal()
-	napsterServer := NewNapsterService(dal)
-	services.RegisterNapsterServer(s, napsterServer)
 
-	waitGroup := new(sync.WaitGroup)
-	waitGroup.Add(2)
-
-	go func() {
-		runKeepAlive(dal)
-		defer waitGroup.Done()
-	}()
-
-	go func() {
-		if err := s.Serve(listener); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-
-		}
-		defer waitGroup.Done()
-	}()
-
-	waitGroup.Wait()
+	server := NewNapsterServer(dal, port)
+	server.Start()
 }
 
 func createDal() dal.ServerDal {
