@@ -18,7 +18,7 @@ type NapsterServerKeepAliveClient struct {
 }
 
 func NewKeepAliveClient(dal dal.ServerDal, ctx context.Context) *NapsterServerKeepAliveClient {
-	return &NapsterServerKeepAliveClient{dal: dal, ctx: ctx}
+	return &NapsterServerKeepAliveClient{dal: dal, ctx: ctx, failedAttemptsMap: make(map[string]int)}
 }
 
 func (ka *NapsterServerKeepAliveClient) Start() {
@@ -29,19 +29,41 @@ func (ka *NapsterServerKeepAliveClient) Start() {
 		}
 
 		for _, peer := range peers {
-			peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
-			conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			client, err := createGrpcClient(peer.IP, peer.Port)
 			if err != nil {
 				continue
 			}
 
-			client := napsterproto.NewNapsterPeerClient(conn)
 			_, err = client.IsAlive(ka.ctx, &emptypb.Empty{})
-			if err == nil {
-				continue
+			if err == nil && !peer.Active {
+				peer.Active = true
+				err = ka.dal.UpdatePeer(ka.ctx, peer)
+				if err != nil {
+					fmt.Printf("Fail to inactivate peer %s error: %s \n", peer.ID.String(), err.Error())
+				}
+			} else {
+				ka.failedAttemptsMap[peer.ID.String()] += 1
+				if ka.failedAttemptsMap[peer.ID.String()] >= 3 {
+					ka.failedAttemptsMap[peer.ID.String()] = 0
+					peer.Active = false
+					err = ka.dal.UpdatePeer(ka.ctx, peer)
+					if err != nil {
+						fmt.Printf("Fail to inactivate peer %s error: %s \n", peer.ID.String(), err.Error())
+					}
+				}
 			}
-
 		}
 		time.Sleep(30 * time.Second)
 	}
+}
+
+func createGrpcClient(ip string, port int32) (napsterproto.NapsterPeerClient, error) {
+	peerAddress := fmt.Sprintf("%s:%d", ip, port)
+	conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
+	client := napsterproto.NewNapsterPeerClient(conn)
+	return client, nil
 }
