@@ -1,18 +1,20 @@
 package main
 
 import (
+	"context"
 	"simple-napster/dal"
 	"sync"
 )
 
 type NapsterServer struct {
-	server *NapsterServerListener
+	server    *NapsterServerListener
+	keepAlive *NapsterServerKeepAliveClient
 }
 
 func NewNapsterServer(dal dal.ServerDal, port int) *NapsterServer {
-	// TODO: instantiate keep alive client
 	return &NapsterServer{
-		server: NewNapsterServerListener(&NapsterServerListenerConfig{Port: port}, dal),
+		server:    NewNapsterServerListener(&NapsterServerListenerConfig{Port: port}, dal),
+		keepAlive: NewKeepAliveClient(dal, context.Background()),
 	}
 }
 
@@ -24,4 +26,11 @@ func (s *NapsterServer) Start() {
 		s.server.Start()
 		waitGroup.Done()
 	}()
+
+	go func() {
+		s.keepAlive.Start()
+		waitGroup.Done()
+	}()
+
+	waitGroup.Wait()
 }

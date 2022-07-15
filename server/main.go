@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"simple-napster/dal"
 	"strconv"
-	"time"
 )
 
 func main() {
@@ -38,13 +36,4 @@ func createDal() dal.ServerDal {
 	}
 	dal := dal.NewDal(config)
 	return dal
-}
-
-func runKeepAlive(serverDal dal.ServerDal) {
-	for true {
-		kac := NewKeepAliveClient(serverDal)
-		ctx := context.Background()
-		kac.RunKeepAliveForAllPeers(ctx)
-		time.Sleep(30 * time.Second)
-	}
 }

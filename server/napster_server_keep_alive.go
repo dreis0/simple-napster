@@ -10,17 +10,18 @@ import (
 	napsterproto "simple-napster/protos/services"
 )
 
-type KeepAliveClient struct {
+type NapsterServerKeepAliveClient struct {
 	dal               dal.ServerDal
 	failedAttemptsMap map[string]int // TODO: Use this to keep track of failed calls and decide whether to inactivate the peer
+	ctx               context.Context
 }
 
-func NewKeepAliveClient(dal dal.ServerDal) *KeepAliveClient {
-	return &KeepAliveClient{dal: dal}
+func NewKeepAliveClient(dal dal.ServerDal, ctx context.Context) *NapsterServerKeepAliveClient {
+	return &NapsterServerKeepAliveClient{dal: dal, ctx: ctx}
 }
 
-func (keepAlive *KeepAliveClient) RunKeepAliveForAllPeers(ctx context.Context) {
-	peers, err := keepAlive.dal.GetPeers(ctx)
+func (ka *NapsterServerKeepAliveClient) Start() {
+	peers, err := ka.dal.GetPeers(ka.ctx)
 	if err != nil {
 		fmt.Errorf("Failed to get peers", err)
 	}
@@ -33,7 +34,7 @@ func (keepAlive *KeepAliveClient) RunKeepAliveForAllPeers(ctx context.Context) {
 		}
 
 		client := napsterproto.NewNapsterPeerClient(conn)
-		_, _ = client.IsAlive(ctx, &emptypb.Empty{})
+		_, _ = client.IsAlive(ka.ctx, &emptypb.Empty{})
 
 	}
 }
