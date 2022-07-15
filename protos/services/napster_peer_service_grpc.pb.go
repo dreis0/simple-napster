@@ -4,7 +4,7 @@
 // - protoc             v3.19.1
 // source: protos/napster_peer_service.proto
 
-package __
+package services
 
 import (
 	context "context"
@@ -13,6 +13,7 @@ import (
 	status "google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	messages "simple-napster/protos/messages"
+
 )
 
 // This is a compile-time assertion to ensure that this generated file

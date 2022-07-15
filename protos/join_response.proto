@@ -2,6 +2,6 @@ syntax = "proto3";
 
 option go_package = "protos/messages";
 
-message DownloadFileResponse {
-  bytes file_bytes = 1;
+message JoinResponse {
+  string id = 1;
 }

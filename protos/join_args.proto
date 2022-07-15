@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-option go_package = ".";
+option go_package = "protos/messages";
+
 
 message JoinArgs {
   string IP = 1;

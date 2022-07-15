@@ -4,12 +4,14 @@
 // 	protoc        v3.19.1
 // source: protos/napster_peer_service.proto
 
-package __
+package services
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	messages "simple-napster/protos/messages"
+
 	reflect "reflect"
 )
 
@@ -40,13 +42,14 @@ var file_protos_napster_peer_service_proto_rawDesc = []byte{
 	0x69, 0x6c, 0x65, 0x12, 0x11, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x46, 0x69,
 	0x6c, 0x65, 0x41, 0x72, 0x67, 0x73, 0x1a, 0x15, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61,
 	0x64, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x30,
-	0x01, 0x42, 0x03, 0x5a, 0x01, 0x2e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x01, 0x42, 0x11, 0x5a, 0x0f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2f, 0x73, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var file_protos_napster_peer_service_proto_goTypes = []interface{}{
-	(*emptypb.Empty)(nil),        // 0: google.protobuf.Empty
-	(*DownloadFileArgs)(nil),     // 1: DownloadFileArgs
-	(*DownloadFileResponse)(nil), // 2: DownloadFileResponse
+	(*emptypb.Empty)(nil),                 // 0: google.protobuf.Empty
+	(*messages.DownloadFileArgs)(nil),     // 1: DownloadFileArgs
+	(*messages.DownloadFileResponse)(nil), // 2: DownloadFileResponse
 }
 var file_protos_napster_peer_service_proto_depIdxs = []int32{
 	0, // 0: NapsterPeer.IsAlive:input_type -> google.protobuf.Empty
@@ -65,8 +68,6 @@ func file_protos_napster_peer_service_proto_init() {
 	if File_protos_napster_peer_service_proto != nil {
 		return
 	}
-	file_protos_download_file_args_proto_init()
-	file_protos_download_file_response_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

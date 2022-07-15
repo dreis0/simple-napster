@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = ".";
+option go_package = "protos/services";
 
 import "google/protobuf/empty.proto";
 import "protos/download_file_args.proto";

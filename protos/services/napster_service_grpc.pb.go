@@ -4,7 +4,7 @@
 // - protoc             v3.19.1
 // source: protos/napster_service.proto
 
-package __
+package services
 
 import (
 	context "context"
@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NapsterClient interface {
-	Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*messages.JoinResponse, error)
 	Leave(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Search(ctx context.Context, in *messages.SearchArgs, opts ...grpc.CallOption) (*messages.SearchResponse, error)
 	Update(ctx context.Context, in *messages.UpdateArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -38,8 +38,8 @@ func NewNapsterClient(cc grpc.ClientConnInterface) NapsterClient {
 	return &napsterClient{cc}
 }
 
-func (c *napsterClient) Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *napsterClient) Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*messages.JoinResponse, error) {
+	out := new(messages.JoinResponse)
 	err := c.cc.Invoke(ctx, "/Napster/Join", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *napsterClient) Update(ctx context.Context, in *messages.UpdateArgs, opt
 // All implementations must embed UnimplementedNapsterServer
 // for forward compatibility
 type NapsterServer interface {
-	Join(context.Context, *messages.JoinArgs) (*emptypb.Empty, error)
+	Join(context.Context, *messages.JoinArgs) (*messages.JoinResponse, error)
 	Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	Search(context.Context, *messages.SearchArgs) (*messages.SearchResponse, error)
 	Update(context.Context, *messages.UpdateArgs) (*emptypb.Empty, error)
@@ -89,7 +89,7 @@ type NapsterServer interface {
 type UnimplementedNapsterServer struct {
 }
 
-func (UnimplementedNapsterServer) Join(context.Context, *messages.JoinArgs) (*emptypb.Empty, error) {
+func (UnimplementedNapsterServer) Join(context.Context, *messages.JoinArgs) (*messages.JoinResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
 func (UnimplementedNapsterServer) Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
