@@ -15,9 +15,9 @@ func main() {
 	portNum, _ := strconv.Atoi(port)
 
 	dal := createDal()
-	peer := NewNapsterPeer(&Config{ServerPort: 10098, SelfPort: portNum, ServerIp: "localhost"}, dal)
+	peer := NewNapsterPeer(&Config{ServerIp: "localhost", ServerPort: 10098, SelfPort: portNum}, dal)
 
-	peer.Run()
+	peer.Start()
 }
 
 func createDal() dal.ClientDal {
