@@ -53,6 +53,7 @@ func (sl *NapsterServerListener) Start() {
 	}
 }
 
+// Join TODO: check if bun correctly sets IDs and see how is the data in the database after a JOIN request
 func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinArgs) (*emptypb.Empty, error) {
 	peer := &entities.Peer{
 		Port:   args.Port,
@@ -60,10 +61,21 @@ func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinAr
 		IP:     args.IP,
 	}
 	err := sl.dal.AddPeer(ctx, peer)
-
 	if err != nil {
 		return nil, err
 	}
+
+	files := make([]*entities.File, len(args.Files))
+	for i, f := range args.Files {
+		files[i] = &entities.File{Name: f}
+	}
+
+	err = sl.dal.AddFilesIfNew(ctx, files)
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+
+	err = sl.dal.AddFilesToPeer(ctx, peer, files)
 
 	return &emptypb.Empty{}, nil
 }

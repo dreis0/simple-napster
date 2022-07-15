@@ -10,12 +10,12 @@ import (
 	"simple-napster/entities"
 )
 
-type DalImpl struct {
+type dalImpl struct {
 	db *bun.DB
 }
 
-var _ ServerDal = (*DalImpl)(nil)
-var _ ClientDal = (*DalImpl)(nil)
+var _ ServerDal = (*dalImpl)(nil)
+var _ ClientDal = (*dalImpl)(nil)
 
 func NewDal(config *Config) ServerDal {
 
@@ -28,17 +28,17 @@ func NewDal(config *Config) ServerDal {
 	)
 	sqldb := sql.OpenDB(conn)
 
-	return &DalImpl{
+	return &dalImpl{
 		db: bun.NewDB(sqldb, pgdialect.New()),
 	}
 }
 
-func (dal *DalImpl) AddPeer(ctx context.Context, peer *entities.Peer) error {
+func (dal *dalImpl) AddPeer(ctx context.Context, peer *entities.Peer) error {
 	_, err := dal.db.NewInsert().Model(peer).Exec(ctx)
 	return err
 }
 
-func (dal *DalImpl) GetPeers(ctx context.Context) ([]*entities.Peer, error) {
+func (dal *dalImpl) GetPeers(ctx context.Context) ([]*entities.Peer, error) {
 	result := []*entities.Peer{}
 	err := dal.db.NewSelect().Model(&result).Scan(ctx)
 	if err != nil {
@@ -48,11 +48,35 @@ func (dal *DalImpl) GetPeers(ctx context.Context) ([]*entities.Peer, error) {
 	return result, nil
 }
 
-func (dal *DalImpl) UpdatePeer(ctx context.Context, peer *entities.Peer) error {
+func (dal *dalImpl) UpdatePeer(ctx context.Context, peer *entities.Peer) error {
 	_, err := dal.db.NewUpdate().Model(peer).Where("id = ?", peer.ID).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (dal *dalImpl) AddFilesIfNew(ctx context.Context, files []*entities.File) error {
+	_, err := dal.db.NewInsert().
+		Model(files).
+		On("CONFLICT (name) DO UPDATE").
+		Set("title = EXCLUDED.name").
+		Exec(ctx)
+
+	return err
+}
+
+func (dal *dalImpl) AddFilesToPeer(ctx context.Context, peer *entities.Peer, files []*entities.File) error {
+	peerFiles := make([]*entities.FilePeer, len(files))
+	for i, f := range files {
+		peerFiles[i] = &entities.FilePeer{PeerId: peer.ID, FileId: f.ID}
+	}
+
+	_, err := dal.db.NewInsert().
+		Model(peerFiles).
+		Ignore().
+		Exec(ctx)
+
+	return err
 }

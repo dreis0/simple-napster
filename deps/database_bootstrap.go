@@ -27,6 +27,8 @@ func main() {
 
 	enableUUID(db)
 	createPeersTable(db, ctx)
+	createFilesTable(db, ctx)
+	createFilePeerTable(db, ctx)
 }
 
 func createDatabase() {
@@ -58,6 +60,28 @@ func enableUUID(db *bun.DB) {
 func createPeersTable(db *bun.DB, ctx context.Context) {
 	_, err := db.NewCreateTable().
 		Model(&entities.Peer{}).
+		IfNotExists().
+		Exec(ctx)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func createFilesTable(db *bun.DB, ctx context.Context) {
+	_, err := db.NewCreateTable().
+		Model(&entities.File{}).
+		IfNotExists().
+		Exec(ctx)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func createFilePeerTable(db *bun.DB, ctx context.Context) {
+	_, err := db.NewCreateTable().
+		Model(&entities.FilePeer{}).
 		IfNotExists().
 		Exec(ctx)
 
