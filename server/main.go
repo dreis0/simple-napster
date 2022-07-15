@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"simple-napster/dal"
 	services "simple-napster/protos/services"
+	"sync"
+	"time"
 )
 
 func main() {
@@ -33,11 +36,23 @@ func main() {
 	napsterServer := NewNapsterService(dal)
 	services.RegisterNapsterServer(s, napsterServer)
 
-	if err := s.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(2)
 
-	log.Printf("listening on port %s", args[1])
+	go func() {
+		runKeepAlive(dal)
+		defer waitGroup.Done()
+	}()
+
+	go func() {
+		if err := s.Serve(listener); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+
+		}
+		defer waitGroup.Done()
+	}()
+
+	waitGroup.Wait()
 }
 
 func createDal() dal.ServerDal {
@@ -50,4 +65,13 @@ func createDal() dal.ServerDal {
 	}
 	dal := dal.NewDal(config)
 	return dal
+}
+
+func runKeepAlive(serverDal dal.ServerDal) {
+	for true {
+		kac := NewKeepAliveClient(serverDal)
+		ctx := context.Background()
+		kac.RunKeepAliveForAllPeers(ctx)
+		time.Sleep(30 * time.Second)
+	}
 }

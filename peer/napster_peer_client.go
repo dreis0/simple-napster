@@ -17,7 +17,7 @@ func NewPeerClient(client napsterProto.NapsterClient) *PeerClient {
 	}
 }
 
-func (c *PeerClient) DoJoinRequest(ctx context.Context) {
+func (c *PeerClient) JoinRequest(ctx context.Context) {
 	args := &messages.JoinArgs{IP: "localhost", Port: 3000, Files: []string{}}
 	_, err := c.client.Join(ctx, args)
 

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = ".";
+
+import "google/protobuf/empty.proto";
+import "protos/download_file_args.proto";
+import "protos/download_file_response.proto";
+
+service NapsterPeer {
+  rpc IsAlive(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc DownloadFile(DownloadFileArgs) returns (stream DownloadFileResponse){}
+}

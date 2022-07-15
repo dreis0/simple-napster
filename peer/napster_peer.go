@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
+	"log"
+	"net"
 	"os"
+	"simple-napster/dal"
+	napsterProto "simple-napster/protos/services"
+	services "simple-napster/protos/services"
 	"strings"
 	"sync"
-	"time"
-
-	messages "simple-napster/protos/messages"
-	napsterProto "simple-napster/protos/services"
 )
 
 type Config struct {
@@ -23,11 +25,13 @@ type Config struct {
 
 type NapsterPeer struct {
 	config *Config
+	dal    dal.ClientDal
 }
 
-func NewNapsterPeer(config *Config) *NapsterPeer {
+func NewNapsterPeer(config *Config, dal dal.ClientDal) *NapsterPeer {
 	return &NapsterPeer{
 		config: config,
+		dal:    dal,
 	}
 }
 
@@ -57,31 +61,34 @@ func (peer *NapsterPeer) runClient() {
 		panic(err)
 	}
 
-	client := napsterProto.NewNapsterClient(conn)
+	client := NewPeerClient(napsterProto.NewNapsterClient(conn))
 	reader := bufio.NewReader(os.Stdin)
 	ctx := context.Background()
 
 	for true {
 		fmt.Println("Type your command")
 		input := readInput(reader)
+
 		switch input {
 		case "JOIN":
-			args := &messages.JoinArgs{IP: "localhost", Port: 3000, Files: []string{}}
-			_, err := client.Join(ctx, args)
-
-			if err != nil {
-				fmt.Printf("Fail to perform JOIN action: %s", err.Error())
-			} else {
-				fmt.Print("JOIN_OK")
-			}
+			client.JoinRequest(ctx)
 		}
 	}
 }
 
 func (peer *NapsterPeer) runServer() {
-	for true {
-		fmt.Println("Server is alive")
-		time.Sleep(10 * time.Second)
+	s := grpc.NewServer()
+	reflection.Register(s)
+	peerServer := NewNapsterPeerServer(peer.dal)
+	services.RegisterNapsterPeerServer(s, peerServer)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", peer.config.SelfPort))
+	if err != nil {
+		panic(err)
+	}
+
+	if err := s.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 

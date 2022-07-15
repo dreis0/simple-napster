@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -36,4 +37,18 @@ func NewDal(config *Config) ServerDal {
 func (dal *DalImpl) AddPeer(ctx context.Context, peer *entities.Peer) error {
 	_, err := dal.db.NewInsert().Model(peer).Exec(ctx)
 	return err
+}
+
+func (dal *DalImpl) GetPeers(ctx context.Context) ([]entities.Peer, error) {
+	result := []entities.Peer{}
+	err := dal.db.NewSelect().Model(&result).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (dal *DalImpl) InativatePeer(ctx context.Context, peerId uuid.UUID) error {
+	return nil
 }
