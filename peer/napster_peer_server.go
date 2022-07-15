@@ -33,6 +33,8 @@ func NewNapsterPeerServer(port int, dal dal.ClientDal) *NapsterPeerServer {
 	reflection.Register(grpcServer)
 	services.RegisterNapsterPeerServer(grpcServer, server)
 
+	server.grpcServer = grpcServer
+
 	return server
 }
 

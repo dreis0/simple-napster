@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"simple-napster/dal"
 	napsterproto "simple-napster/protos/services"
+	"time"
 )
 
 type NapsterServerKeepAliveClient struct {
@@ -21,20 +22,26 @@ func NewKeepAliveClient(dal dal.ServerDal, ctx context.Context) *NapsterServerKe
 }
 
 func (ka *NapsterServerKeepAliveClient) Start() {
-	peers, err := ka.dal.GetPeers(ka.ctx)
-	if err != nil {
-		fmt.Errorf("Failed to get peers", err)
-	}
-
-	for _, peer := range peers {
-		peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
-		conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	for true {
+		peers, err := ka.dal.GetPeers(ka.ctx)
 		if err != nil {
-			continue
+			fmt.Errorf("Failed to get peers", err)
 		}
 
-		client := napsterproto.NewNapsterPeerClient(conn)
-		_, _ = client.IsAlive(ka.ctx, &emptypb.Empty{})
+		for _, peer := range peers {
+			peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
+			conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				continue
+			}
 
+			client := napsterproto.NewNapsterPeerClient(conn)
+			_, err = client.IsAlive(ka.ctx, &emptypb.Empty{})
+			if err == nil {
+				continue
+			}
+
+		}
+		time.Sleep(30 * time.Second)
 	}
 }

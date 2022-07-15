@@ -42,6 +42,8 @@ func NewNapsterServerListener(
 	reflection.Register(grpcServer)
 	services.RegisterNapsterServer(grpcServer, napster)
 
+	napster.grpcServer = grpcServer
+
 	return napster
 }
 
