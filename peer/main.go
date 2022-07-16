@@ -3,24 +3,49 @@ package main
 import (
 	"os"
 	"simple-napster/dal"
+	"simple-napster/utils"
 	"strconv"
 )
 
 func main() {
 	args := os.Args
-	if len(args) <= 1 {
+	portStr, err := utils.GetArgument(args, "port")
+	if err != nil {
 		panic("no port provided")
 	}
-	port := args[1]
-	portNum, _ := strconv.Atoi(port)
+
+	portNum, err := strconv.Atoi(portStr)
+	if err != nil {
+		panic("invalid port number")
+	}
+
+	files_path, err := utils.GetArgument(args, "files-path")
+	if err != nil {
+		panic("no path provided to read and save files")
+	}
+
+	serverIp, err := utils.GetArgument(args, "server-ip")
+	if err != nil {
+		panic("no server IP provided")
+	}
+
+	serverPortStr, err := utils.GetArgument(args, "server-port")
+	if err != nil {
+		panic("no server port provided")
+	}
+
+	serverPort, err := strconv.Atoi(serverPortStr)
+	if err != nil {
+		panic("invalid server port provided")
+	}
 
 	dal := createDal()
 	peer := NewNapsterPeer(
 		&NapsterPeerConfig{
-			ServerIp:   "localhost",
-			ServerPort: 10098,
+			ServerIp:   serverIp,
+			ServerPort: serverPort,
 			SelfPort:   portNum,
-			FilePath:   "./peer_1",
+			FilePath:   files_path,
 		},
 		dal,
 	)
