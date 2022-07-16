@@ -25,7 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NapsterClient interface {
 	Join(ctx context.Context, in *messages.JoinArgs, opts ...grpc.CallOption) (*messages.JoinResponse, error)
-	Leave(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Leave(ctx context.Context, in *messages.LeaveArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Search(ctx context.Context, in *messages.SearchArgs, opts ...grpc.CallOption) (*messages.SearchResponse, error)
 	Update(ctx context.Context, in *messages.UpdateArgs, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -47,7 +47,7 @@ func (c *napsterClient) Join(ctx context.Context, in *messages.JoinArgs, opts ..
 	return out, nil
 }
 
-func (c *napsterClient) Leave(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *napsterClient) Leave(ctx context.Context, in *messages.LeaveArgs, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/Napster/Leave", in, out, opts...)
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *napsterClient) Update(ctx context.Context, in *messages.UpdateArgs, opt
 // for forward compatibility
 type NapsterServer interface {
 	Join(context.Context, *messages.JoinArgs) (*messages.JoinResponse, error)
-	Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Leave(context.Context, *messages.LeaveArgs) (*emptypb.Empty, error)
 	Search(context.Context, *messages.SearchArgs) (*messages.SearchResponse, error)
 	Update(context.Context, *messages.UpdateArgs) (*emptypb.Empty, error)
 	mustEmbedUnimplementedNapsterServer()
@@ -92,7 +92,7 @@ type UnimplementedNapsterServer struct {
 func (UnimplementedNapsterServer) Join(context.Context, *messages.JoinArgs) (*messages.JoinResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
-func (UnimplementedNapsterServer) Leave(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+func (UnimplementedNapsterServer) Leave(context.Context, *messages.LeaveArgs) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
 }
 func (UnimplementedNapsterServer) Search(context.Context, *messages.SearchArgs) (*messages.SearchResponse, error) {
@@ -133,7 +133,7 @@ func _Napster_Join_Handler(srv interface{}, ctx context.Context, dec func(interf
 }
 
 func _Napster_Leave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(messages.LeaveArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func _Napster_Leave_Handler(srv interface{}, ctx context.Context, dec func(inter
 		FullMethod: "/Napster/Leave",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NapsterServer).Leave(ctx, req.(*emptypb.Empty))
+		return srv.(NapsterServer).Leave(ctx, req.(*messages.LeaveArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }

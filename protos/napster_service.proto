@@ -8,10 +8,11 @@ import "protos/join_response.proto";
 import "protos/search_args.proto";
 import "protos/search_response.proto";
 import "protos/update_args.proto";
+import "protos/leave_args.proto";
 
 service Napster {
   rpc Join(JoinArgs) returns (JoinResponse) {}
-  rpc Leave(google.protobuf.Empty) returns (google.protobuf.Empty){}
+  rpc Leave(LeaveArgs) returns (google.protobuf.Empty){}
   rpc Search(SearchArgs) returns (SearchResponse){}
   rpc Update(UpdateArgs) returns (google.protobuf.Empty) {}
 }

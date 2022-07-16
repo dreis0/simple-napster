@@ -1,6 +1,8 @@
 syntax = "proto3";
 option go_package = "protos/messages";
 
+import "protos/peer.proto";
+
 message SearchResponse {
-  repeated string available_peers = 1;
+  repeated Peer available_peers = 1;
 }

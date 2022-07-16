@@ -3,7 +3,9 @@ package dal
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -79,4 +81,44 @@ func (dal *dalImpl) AddFilesToPeer(ctx context.Context, peer *entities.Peer, fil
 		Exec(ctx)
 
 	return err
+}
+
+func (dal *dalImpl) GetPeerById(ctx context.Context, id uuid.UUID) (*entities.Peer, error) {
+	peer := &entities.Peer{}
+	err := dal.db.NewSelect().Model(peer).Where("id = ?", id).Scan(ctx)
+
+	return peer, err
+}
+
+func (dal *dalImpl) DeletePeerAndFiles(ctx context.Context, id uuid.UUID) error {
+	_, err := dal.db.NewDelete().Model(&entities.Peer{}).Where("id = ?", id).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = dal.db.NewDelete().Model(&entities.FilePeer{}).Where("peer_id = ?", id).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (dal *dalImpl) GetAllPeersWithFile(ctx context.Context, filename string) ([]*entities.Peer, error) {
+	exists, err := dal.db.NewSelect().Model(&entities.File{}).Where("name = ?", filename).Exists(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("file not found")
+	}
+
+	peers := []*entities.Peer{}
+	err = dal.db.NewSelect().Model(peers).
+		Join("JOIN file_peer fp on fp.peer_id = p.id").
+		Join("JOIN files f on f.id = fp.id").
+		Where("active = 1").
+		Where("f.name = ?", filename).
+		Scan(ctx)
+
+	return peers, nil
 }

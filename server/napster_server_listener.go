@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -54,7 +55,7 @@ func (sl *NapsterServerListener) Start() {
 }
 
 // Join TODO: check if bun correctly sets IDs and see how is the data in the database after a JOIN request
-func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinArgs) (*emptypb.Empty, error) {
+func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinArgs) (*messages.JoinResponse, error) {
 	peer := &entities.Peer{
 		Port:   args.Port,
 		Active: true,
@@ -72,10 +73,43 @@ func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinAr
 
 	err = sl.dal.AddFilesIfNew(ctx, files)
 	if err != nil {
-		return &emptypb.Empty{}, err
+		return nil, err
 	}
 
 	err = sl.dal.AddFilesToPeer(ctx, peer, files)
+	if err != nil {
+		return nil, err
+	}
+	return &messages.JoinResponse{Id: peer.ID.String()}, nil
+}
+
+func (sl *NapsterServerListener) Leave(ctx context.Context, args *messages.LeaveArgs) (*emptypb.Empty, error) {
+	id, err := uuid.Parse(args.PeerId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = sl.dal.DeletePeerAndFiles(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (sl *NapsterServerListener) Search(ctx context.Context, args *messages.SearchArgs) (*messages.SearchResponse, error) {
+	peers, err := sl.dal.GetAllPeersWithFile(ctx, args.Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	protos := make([]*messages.Peer, len(peers))
+	for i, peer := range peers {
+		protos[i] = &messages.Peer{
+			Port: peer.Port,
+			IP:   peer.IP,
+		}
+	}
+
+	return &messages.SearchResponse{AvailablePeers: protos}, nil
 }
