@@ -83,6 +83,16 @@ func (dal *dalImpl) AddFilesToPeer(ctx context.Context, peer *entities.Peer, fil
 	return err
 }
 
+func (dal *dalImpl) AddFileToPeeerWithFilename(ctx context.Context, peer *entities.Peer, filename string) error {
+	file := &entities.File{}
+	err := dal.db.NewSelect().Model(file).Where("name = ?", filename).Scan(ctx)
+	if err != nil {
+		return err
+	}
+
+	return dal.AddFilesToPeer(ctx, peer, []*entities.File{file})
+}
+
 func (dal *dalImpl) GetPeerById(ctx context.Context, id uuid.UUID) (*entities.Peer, error) {
 	peer := &entities.Peer{}
 	err := dal.db.NewSelect().Model(peer).Where("id = ?", id).Scan(ctx)

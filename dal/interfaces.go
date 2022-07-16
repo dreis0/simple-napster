@@ -15,6 +15,7 @@ type ServerDal interface {
 	AddFilesIfNew(ctx context.Context, files []*entities.File) error
 	AddFilesToPeer(ctx context.Context, peer *entities.Peer, files []*entities.File) error
 	GetAllPeersWithFile(ctx context.Context, filename string) ([]*entities.Peer, error)
+	AddFileToPeeerWithFilename(ctx context.Context, peer *entities.Peer, filename string) error
 }
 
 type ClientDal interface {

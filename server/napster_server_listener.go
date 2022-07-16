@@ -113,3 +113,18 @@ func (sl *NapsterServerListener) Search(ctx context.Context, args *messages.Sear
 
 	return &messages.SearchResponse{AvailablePeers: protos}, nil
 }
+
+func (sl *NapsterServerListener) Update(ctx context.Context, args *messages.UpdateArgs) (*emptypb.Empty, error) {
+	id, err := uuid.Parse(args.PeerId)
+	if err != nil {
+		return nil, err
+	}
+	peer := &entities.Peer{ID: id}
+
+	err = sl.dal.AddFileToPeeerWithFilename(ctx, peer, args.NewFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
