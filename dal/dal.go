@@ -61,9 +61,9 @@ func (dal *dalImpl) UpdatePeer(ctx context.Context, peer *entities.Peer) error {
 
 func (dal *dalImpl) AddFilesIfNew(ctx context.Context, files []*entities.File) error {
 	_, err := dal.db.NewInsert().
-		Model(files).
+		Model(&files).
 		On("CONFLICT (name) DO UPDATE").
-		Set("title = EXCLUDED.name").
+		Set("name = EXCLUDED.name").
 		Exec(ctx)
 
 	return err
@@ -76,7 +76,7 @@ func (dal *dalImpl) AddFilesToPeer(ctx context.Context, peer *entities.Peer, fil
 	}
 
 	_, err := dal.db.NewInsert().
-		Model(peerFiles).
+		Model(&peerFiles).
 		Ignore().
 		Exec(ctx)
 
