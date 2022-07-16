@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io/ioutil"
 	"os"
 	messages "simple-napster/protos/messages"
 	napsterProto "simple-napster/protos/services"
@@ -54,11 +55,21 @@ func (c *NapsterPeerClient) Start() {
 }
 
 func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
-	args := &messages.JoinArgs{IP: "localhost", Port: 3000, Files: []string{}}
+	files, err := ioutil.ReadDir(c.filePath)
+	if err != nil {
+		fmt.Printf("Fail to perform JOIN action. Cannot read files: %s \n", err.Error())
+	}
+
+	filenames := make([]string, len(files))
+	for i, fi := range files {
+		filenames[i] = fi.Name()
+	}
+
+	args := &messages.JoinArgs{IP: "localhost", Port: 3000, Files: filenames}
 	response, err := c.client.Join(ctx, args)
 
 	if err != nil {
-		fmt.Printf("Fail to perform JOIN action: %s", err.Error())
+		fmt.Printf("Fail to perform JOIN action: %s \n", err.Error())
 	} else {
 		c.selfId = response.Id
 		fmt.Println("JOIN_OK")
