@@ -20,7 +20,7 @@ type NapsterPeer struct {
 
 func NewNapsterPeer(config *NapsterPeerConfig, dal dal.ClientDal) *NapsterPeer {
 	return &NapsterPeer{
-		client: NewPeerClient(&NapsterPeerClientConfig{ServerIp: config.ServerIp, ServerPort: config.ServerPort, FilePath: config.FilePath}),
+		client: NewPeerClient(&NapsterPeerClientConfig{SelfPort: config.SelfPort, ServerIp: config.ServerIp, ServerPort: config.ServerPort, FilePath: config.FilePath}),
 		server: NewNapsterPeerServer(&NapsterPeerServerConfig{Port: config.SelfPort, FilePath: config.FilePath}, dal),
 	}
 }

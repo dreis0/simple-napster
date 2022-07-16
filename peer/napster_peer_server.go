@@ -51,6 +51,5 @@ func (ps *NapsterPeerServer) Start() {
 }
 
 func (peer *NapsterPeerServer) IsAlive(ctx context.Context, args *emptypb.Empty) (*emptypb.Empty, error) {
-	fmt.Println("Is alive received")
 	return &emptypb.Empty{}, nil
 }

@@ -18,12 +18,14 @@ import (
 type NapsterPeerClient struct {
 	client   napsterProto.NapsterClient
 	selfId   string
+	selfPort int
 	filePath string
 }
 
 type NapsterPeerClientConfig struct {
 	ServerIp   string
 	ServerPort int
+	SelfPort   int
 	FilePath   string
 }
 
@@ -38,6 +40,7 @@ func NewPeerClient(config *NapsterPeerClientConfig) *NapsterPeerClient {
 	return &NapsterPeerClient{
 		client:   napsterProto.NewNapsterClient(conn),
 		filePath: config.FilePath,
+		selfPort: config.SelfPort,
 	}
 }
 
@@ -73,7 +76,7 @@ func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
 		filenames[i] = fi.Name()
 	}
 
-	args := &messages.JoinArgs{IP: "localhost", Port: 3000, Files: filenames}
+	args := &messages.JoinArgs{IP: "localhost", Port: int32(c.selfPort), Files: filenames}
 	response, err := c.client.Join(ctx, args)
 
 	if err != nil {
