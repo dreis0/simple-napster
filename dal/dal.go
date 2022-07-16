@@ -123,12 +123,16 @@ func (dal *dalImpl) GetAllPeersWithFile(ctx context.Context, filename string) ([
 	}
 
 	peers := []*entities.Peer{}
-	err = dal.db.NewSelect().Model(peers).
+	err = dal.db.NewSelect().Model(&peers).
 		Join("JOIN file_peer fp on fp.peer_id = p.id").
-		Join("JOIN files f on f.id = fp.id").
-		Where("active = 1").
+		Join("JOIN files f on f.id = fp.file_id").
+		Where("p.active = TRUE").
 		Where("f.name = ?", filename).
 		Scan(ctx)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return peers, nil
 }
