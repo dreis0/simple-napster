@@ -8,8 +8,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"os"
+	"simple-napster/entities"
 	messages "simple-napster/protos/messages"
 	napsterProto "simple-napster/protos/services"
+	"strconv"
 	"strings"
 )
 
@@ -54,6 +56,8 @@ func (c *NapsterPeerClient) Start() {
 		case "LEAVE":
 			c.LeaveRequest(ctx)
 			break
+		case "SEARCH":
+			c.SearchRequest(ctx, reader)
 		}
 	}
 }
@@ -89,6 +93,44 @@ func (c *NapsterPeerClient) LeaveRequest(ctx context.Context) {
 	} else {
 		fmt.Println("LEAVE_OK")
 	}
+}
+
+func (c *NapsterPeerClient) SearchRequest(ctx context.Context, reader *bufio.Reader) {
+	fmt.Println("Enter filename:")
+	filename := readInput(reader)
+
+	args := &messages.SearchArgs{Filename: filename}
+	response, err := c.client.Search(ctx, args)
+	if err != nil {
+		fmt.Printf("Fail to perform SEARCH action: %s \n", err.Error())
+		return
+	}
+	if len(response.AvailablePeers) == 0 {
+		fmt.Println("No peers available")
+		return
+	}
+
+	fmt.Println("Choose a peer by typing the corresponding index: ")
+	fmt.Println("0 - Cancel")
+	for i, p := range response.AvailablePeers {
+		fmt.Printf("%d - %s:%d\n", i+1, p.IP, p.Port)
+	}
+
+	peerIdx, err := strconv.Atoi(readInput(reader))
+	if err != nil {
+		fmt.Println("Invalid input")
+		return
+	}
+	if peerIdx != 0 {
+		c.DownloadRequest(ctx, &entities.Peer{
+			IP:   response.AvailablePeers[peerIdx-1].IP,
+			Port: response.AvailablePeers[peerIdx-1].Port,
+		})
+	}
+}
+
+func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer) {
+
 }
 
 func readInput(reader *bufio.Reader) string {
