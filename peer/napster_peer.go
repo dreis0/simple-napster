@@ -10,6 +10,7 @@ type NapsterPeerConfig struct {
 	SelfPort   int
 	ServerIp   string
 	ServerPort int
+	FilePath   string
 }
 
 type NapsterPeer struct {
@@ -19,8 +20,8 @@ type NapsterPeer struct {
 
 func NewNapsterPeer(config *NapsterPeerConfig, dal dal.ClientDal) *NapsterPeer {
 	return &NapsterPeer{
-		client: NewPeerClient(&NapsterPeerClientConfig{ServerIp: config.ServerIp, ServerPort: config.ServerPort}),
-		server: NewNapsterPeerServer(config.SelfPort, dal),
+		client: NewPeerClient(&NapsterPeerClientConfig{ServerIp: config.ServerIp, ServerPort: config.ServerPort, FilePath: config.FilePath}),
+		server: NewNapsterPeerServer(&NapsterPeerServerConfig{Port: config.SelfPort, FilePath: config.FilePath}, dal),
 	}
 }
 

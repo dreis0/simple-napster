@@ -14,16 +14,22 @@ import (
 type NapsterPeerServer struct {
 	services.UnimplementedNapsterPeerServer
 
-	dal dal.ClientDal
+	dal      dal.ClientDal
+	filePath string
 
 	listener   net.Listener
 	grpcServer *grpc.Server
 }
 
-func NewNapsterPeerServer(port int, dal dal.ClientDal) *NapsterPeerServer {
-	server := &NapsterPeerServer{dal: dal}
+type NapsterPeerServerConfig struct {
+	Port     int
+	FilePath string
+}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func NewNapsterPeerServer(config *NapsterPeerServerConfig, dal dal.ClientDal) *NapsterPeerServer {
+	server := &NapsterPeerServer{dal: dal, filePath: config.FilePath}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 	if err != nil {
 		panic(err)
 	}
