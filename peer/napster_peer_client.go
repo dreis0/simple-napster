@@ -50,6 +50,10 @@ func (c *NapsterPeerClient) Start() {
 		switch input {
 		case "JOIN":
 			c.JoinRequest(ctx)
+			break
+		case "LEAVE":
+			c.LeaveRequest(ctx)
+			break
 		}
 	}
 }
@@ -73,6 +77,17 @@ func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
 	} else {
 		c.selfId = response.Id
 		fmt.Println("JOIN_OK")
+	}
+}
+
+func (c *NapsterPeerClient) LeaveRequest(ctx context.Context) {
+	args := &messages.LeaveArgs{PeerId: c.selfId}
+
+	_, err := c.client.Leave(ctx, args)
+	if err != nil {
+		fmt.Printf("Fail to perform LEAVE action: %s \n", err.Error())
+	} else {
+		fmt.Println("LEAVE_OK")
 	}
 }
 
