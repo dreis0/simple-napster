@@ -175,7 +175,7 @@ func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.
 		file, err := os.Create(c.filePath + "/" + filename)
 		if err != nil {
 			fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
-			returnw
+			return
 		}
 		defer file.Close()
 		file.Write(fileBytes)
