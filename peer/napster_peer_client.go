@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io"
 	"io/ioutil"
 	"os"
 	"simple-napster/entities"
@@ -128,12 +129,61 @@ func (c *NapsterPeerClient) SearchRequest(ctx context.Context, reader *bufio.Rea
 		c.DownloadRequest(ctx, &entities.Peer{
 			IP:   response.AvailablePeers[peerIdx-1].IP,
 			Port: response.AvailablePeers[peerIdx-1].Port,
-		})
+		}, filename)
 	}
 }
 
-func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer) {
+func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer, filename string) {
+	peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
+	conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
+		return
+	}
 
+	client := napsterProto.NewNapsterPeerClient(conn)
+	stream, err := client.DownloadFile(ctx, &messages.DownloadFileArgs{Partition: 1, FileName: filename})
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
+		return
+	}
+
+	done := make(chan bool)
+	fileBytes := []byte{}
+
+	go func() {
+		for {
+			response, err := stream.Recv()
+			if err == io.EOF {
+				done <- true //means stream is finished
+				return
+			}
+			if err != nil {
+				fmt.Printf("Fail to perform DOWNLOAD action. Download interrupted: %s \n", err.Error())
+				done <- true
+				break
+			}
+			fileBytes = append(fileBytes, response.FileBytes...)
+		}
+	}()
+
+	var d bool
+	d = <-done
+
+	// TODO: trigger update request after download
+	if d {
+		file, err := os.Create(c.filePath + "/" + filename)
+		if err != nil {
+			fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
+			returnw
+		}
+		defer file.Close()
+		file.Write(fileBytes)
+
+		fmt.Println("DONWLOAD_OK")
+	} else {
+		fmt.Println("DOWNLOAD_FAILED")
+	}
 }
 
 func readInput(reader *bufio.Reader) string {
