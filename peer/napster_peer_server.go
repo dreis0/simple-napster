@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"simple-napster/dal"
@@ -60,6 +61,9 @@ func (peer *NapsterPeerServer) IsAlive(ctx context.Context, args *emptypb.Empty)
 }
 
 func (peer *NapsterPeerServer) DownloadFile(args *messages.DownloadFileArgs, server services.NapsterPeer_DownloadFileServer) error {
+	if !shouldAcceptRequest() {
+		return errors.New("DOWNLOAD_NEGADO")
+	}
 	files, err := ioutil.ReadDir(peer.filePath)
 	if err != nil {
 		return err
@@ -104,4 +108,8 @@ func (peer *NapsterPeerServer) DownloadFile(args *messages.DownloadFileArgs, ser
 	}
 
 	return nil
+}
+
+func shouldAcceptRequest() bool {
+	return rand.Intn(1) == 0
 }
