@@ -4,5 +4,4 @@ option go_package = "protos/messages";
 
 message DownloadFileArgs {
   string file_name = 1;
-  int32 partition = 2;
 }

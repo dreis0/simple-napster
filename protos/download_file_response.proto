@@ -4,4 +4,6 @@ option go_package = "protos/messages";
 
 message DownloadFileResponse {
   bytes file_bytes = 1;
+  int32 partition = 2;
+  int32 total_partitions = 3;
 }

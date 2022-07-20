@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -82,9 +83,25 @@ func (peer *NapsterPeerServer) DownloadFile(args *messages.DownloadFileArgs, ser
 	}
 	defer file.Close()
 
-	bytes := make([]byte, fileInfo.Size())
-	file.Read(bytes)
-	server.Send(&messages.DownloadFileResponse{FileBytes: bytes})
+	size := fileInfo.Size()
+	ammountOfSends := size / 10000
+
+	for i := 0; i <= int(ammountOfSends); i++ {
+		bytes := make([]byte, size/ammountOfSends)
+		if err != nil {
+			return err
+		}
+		_, err := file.Read(bytes)
+		if err != nil && err != io.EOF {
+			return err
+		}
+
+		server.Send(&messages.DownloadFileResponse{
+			FileBytes:       bytes,
+			Partition:       int32(i),
+			TotalPartitions: int32(ammountOfSends),
+		})
+	}
 
 	return nil
 }

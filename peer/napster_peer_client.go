@@ -134,21 +134,21 @@ func (c *NapsterPeerClient) SearchRequest(ctx context.Context, reader *bufio.Rea
 }
 
 func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer, filename string) {
-	peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
-	conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client, err := createPeerStreamClient(peer)
+
 	if err != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
+		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
 		return
 	}
 
-	client := napsterProto.NewNapsterPeerClient(conn)
-	stream, err := client.DownloadFile(ctx, &messages.DownloadFileArgs{Partition: 1, FileName: filename})
+	stream, err := client.DownloadFile(ctx, &messages.DownloadFileArgs{FileName: filename})
 	if err != nil {
 		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
 		return
 	}
 
 	done := make(chan bool)
+	var downloadErr error
 	fileBytes := []byte{}
 
 	go func() {
@@ -159,7 +159,7 @@ func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.
 				return
 			}
 			if err != nil {
-				fmt.Printf("Fail to perform DOWNLOAD action. Download interrupted: %s \n", err.Error())
+				downloadErr = err
 				done <- true
 				break
 			}
@@ -167,23 +167,42 @@ func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.
 		}
 	}()
 
-	var d bool
-	d = <-done
+	<-done
+	if downloadErr != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
+		return
+	}
 
 	// TODO: trigger update request after download
-	if d {
-		file, err := os.Create(c.filePath + "/" + filename)
-		if err != nil {
-			fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
-			return
-		}
-		defer file.Close()
-		file.Write(fileBytes)
-
-		fmt.Println("DONWLOAD_OK")
-	} else {
-		fmt.Println("DOWNLOAD_FAILED")
+	file, err := os.Create(c.filePath + "/" + filename)
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
+		return
 	}
+	_, err = file.Write(fileBytes)
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
+		return
+	}
+
+	fmt.Println("DONWLOAD_OK")
+	c.UpdateRequest(ctx, filename)
+}
+
+func (c *NapsterPeerClient) UpdateRequest(ctx context.Context, file string) {
+	args := &messages.UpdateArgs{PeerId: c.selfId, NewFile: file}
+	c.client.Update(ctx, args)
+}
+
+func createPeerStreamClient(peer *entities.Peer) (napsterProto.NapsterPeerClient, error) {
+	peerAddress := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
+	conn, err := grpc.Dial(peerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
+		return nil, err
+	}
+
+	return napsterProto.NewNapsterPeerClient(conn), nil
 }
 
 func readInput(reader *bufio.Reader) string {
