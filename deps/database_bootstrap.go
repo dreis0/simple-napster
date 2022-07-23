@@ -4,20 +4,34 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"os"
+	"simple-napster/dal"
 	"simple-napster/entities"
+	"simple-napster/utils"
 )
 
 func main() {
+	file, err := utils.GetArgument(os.Args, "env")
+	if err != nil {
+		panic(err)
+	}
+	err = godotenv.Load(file)
+	if err != nil {
+		panic(err)
+	}
+
 	createDatabase()
+	config := dal.FromEnv()
 
 	conn := pgdriver.NewConnector(
-		pgdriver.WithAddr(fmt.Sprintf("localhost:5432")),
-		pgdriver.WithUser("postgres"),
-		pgdriver.WithPassword("postgres"),
-		pgdriver.WithDatabase("napster"),
+		pgdriver.WithAddr(config.Url),
+		pgdriver.WithUser(config.Username),
+		pgdriver.WithPassword(config.Password),
+		pgdriver.WithDatabase(config.Database),
 		pgdriver.WithInsecure(true),
 	)
 
@@ -25,17 +39,18 @@ func main() {
 	db := bun.NewDB(sqldb, pgdialect.New())
 	ctx := context.Background()
 
-	enableUUID(db)
+	//enableUUID(db)
 	createPeersTable(db, ctx)
 	createFilesTable(db, ctx)
 	createFilePeerTable(db, ctx)
 }
 
 func createDatabase() {
+	config := dal.FromEnv()
 	conn := pgdriver.NewConnector(
-		pgdriver.WithAddr(fmt.Sprintf("localhost:5432")),
-		pgdriver.WithUser("postgres"),
-		pgdriver.WithPassword("postgres"),
+		pgdriver.WithAddr(fmt.Sprintf(config.Url)),
+		pgdriver.WithUser(config.Username),
+		pgdriver.WithPassword(config.Password),
 		pgdriver.WithDatabase("postgres"),
 		pgdriver.WithInsecure(true),
 	)
@@ -54,7 +69,10 @@ func createDatabase() {
 }
 
 func enableUUID(db *bun.DB) {
-	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+	_, err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func createPeersTable(db *bun.DB, ctx context.Context) {

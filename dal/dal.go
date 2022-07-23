@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -17,12 +16,11 @@ type dalImpl struct {
 }
 
 var _ ServerDal = (*dalImpl)(nil)
-var _ ClientDal = (*dalImpl)(nil)
 
-func NewDal(config *Config) ServerDal {
-
+func NewDalFromEnv() ServerDal {
+	config := FromEnv()
 	conn := pgdriver.NewConnector(
-		pgdriver.WithAddr(fmt.Sprintf("%s:%d", config.Hostname, config.Port)),
+		pgdriver.WithAddr(config.Url),
 		pgdriver.WithUser(config.Username),
 		pgdriver.WithPassword(config.Password),
 		pgdriver.WithDatabase(config.Database),
@@ -36,6 +34,7 @@ func NewDal(config *Config) ServerDal {
 }
 
 func (dal *dalImpl) AddPeer(ctx context.Context, peer *entities.Peer) error {
+	peer.ID = uuid.New()
 	_, err := dal.db.NewInsert().Model(peer).Exec(ctx)
 	return err
 }
@@ -60,6 +59,9 @@ func (dal *dalImpl) UpdatePeer(ctx context.Context, peer *entities.Peer) error {
 }
 
 func (dal *dalImpl) AddFilesIfNew(ctx context.Context, files []*entities.File) error {
+	for _, f := range files {
+		f.ID = uuid.New()
+	}
 	_, err := dal.db.NewInsert().
 		Model(&files).
 		On("CONFLICT (name) DO UPDATE").

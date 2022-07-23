@@ -20,22 +20,8 @@ func main() {
 	if err != nil {
 		panic("invalid port provided")
 	}
-	log.Printf("port: %s", port)
+	log.Printf("port: %d", port)
 
-	dal := createDal()
-
-	server := NewNapsterServer(dal, port)
+	server := NewNapsterServer(dal.NewDalFromEnv(), port)
 	server.Start()
-}
-
-func createDal() dal.ServerDal {
-	config := &dal.Config{
-		Hostname: "localhost",
-		Port:     5432,
-		Password: "postgres",
-		Username: "postgres",
-		Database: "napster",
-	}
-	dal := dal.NewDal(config)
-	return dal
 }

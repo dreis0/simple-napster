@@ -17,6 +17,3 @@ type ServerDal interface {
 	GetAllPeersWithFile(ctx context.Context, filename string) ([]*entities.Peer, error)
 	AddFileToPeeerWithFilename(ctx context.Context, peer *entities.Peer, filename string) error
 }
-
-type ClientDal interface {
-}

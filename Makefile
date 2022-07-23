@@ -19,4 +19,4 @@ run-peer:
 create-deps:
 	@docker-compose -f ${DOCKER_PATH} up -d
 	@sleep 5
-	@go run deps/*.go
+	@go run deps/*.go --env .env

@@ -7,6 +7,6 @@ import (
 
 type File struct {
 	bun.BaseModel `bun:"table:files,alias:f"`
-	ID            uuid.UUID `bun:"type:uuid,default:uuid_generate_v4()"`
+	ID            uuid.UUID `bun:"type:uuid"`
 	Name          string    `bun:",notnull,unique"`
 }
