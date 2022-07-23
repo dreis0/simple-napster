@@ -9,12 +9,12 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"os"
 	"simple-napster/dal"
 	"simple-napster/protos/messages"
 	services "simple-napster/protos/services"
+	"simple-napster/utils"
 )
 
 type NapsterPeerServer struct {
@@ -88,7 +88,7 @@ func (peer *NapsterPeerServer) DownloadFile(args *messages.DownloadFileArgs, ser
 	defer file.Close()
 
 	size := fileInfo.Size()
-	ammountOfSends := size / 10000
+	ammountOfSends := size / 100000
 
 	for i := 0; i <= int(ammountOfSends); i++ {
 		bytes := make([]byte, size/ammountOfSends)
@@ -111,5 +111,5 @@ func (peer *NapsterPeerServer) DownloadFile(args *messages.DownloadFileArgs, ser
 }
 
 func shouldAcceptRequest() bool {
-	return rand.Intn(1) == 0
+	return utils.RandomInt(1) == 1
 }

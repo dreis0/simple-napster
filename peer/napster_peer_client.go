@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -12,8 +13,13 @@ import (
 	"simple-napster/entities"
 	messages "simple-napster/protos/messages"
 	napsterProto "simple-napster/protos/services"
-	"strconv"
+	"simple-napster/utils"
 	"strings"
+	"time"
+)
+
+var (
+	ERR_NO_PEERS_AVAILABLE = errors.New("no peers available for specified file")
 )
 
 type NapsterPeerClient struct {
@@ -49,6 +55,11 @@ func (c *NapsterPeerClient) Start() {
 	reader := bufio.NewReader(os.Stdin)
 	ctx := context.Background()
 
+	fmt.Println("Available commands: ")
+	fmt.Println("JOIN - join network ")
+	fmt.Println("LEAVE - leave network ")
+	fmt.Println("DOWNLOAD - attempt download of file")
+
 	for true {
 		fmt.Println("Type your command")
 		input := readInput(reader)
@@ -60,10 +71,11 @@ func (c *NapsterPeerClient) Start() {
 		case "LEAVE":
 			c.LeaveRequest(ctx)
 			break
-		case "SEARCH":
-			c.SearchRequest(ctx, reader)
+		case "DOWNLOAD":
+			c.attemptDownload(ctx, reader)
 		}
 	}
+
 }
 
 func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
@@ -99,52 +111,32 @@ func (c *NapsterPeerClient) LeaveRequest(ctx context.Context) {
 	}
 }
 
-func (c *NapsterPeerClient) SearchRequest(ctx context.Context, reader *bufio.Reader) {
+func (c *NapsterPeerClient) SearchRequest(ctx context.Context, reader *bufio.Reader) ([]*messages.Peer, string, error) {
 	fmt.Println("Enter filename:")
 	filename := readInput(reader)
 
 	args := &messages.SearchArgs{Filename: filename}
 	response, err := c.client.Search(ctx, args)
 	if err != nil {
-		fmt.Printf("Fail to perform SEARCH action: %s \n", err.Error())
-		return
+		return nil, "", errors.New(fmt.Sprintf("Fail to perform SEARCH action: %s \n", err.Error()))
 	}
 	if len(response.AvailablePeers) == 0 {
-		fmt.Println("No peers available")
-		return
+		return nil, "", ERR_NO_PEERS_AVAILABLE
 	}
 
-	fmt.Println("Choose a peer by typing the corresponding index: ")
-	fmt.Println("0 - Cancel")
-	for i, p := range response.AvailablePeers {
-		fmt.Printf("%d - %s:%d\n", i+1, p.IP, p.Port)
-	}
-
-	peerIdx, err := strconv.Atoi(readInput(reader))
-	if err != nil {
-		fmt.Println("Invalid input")
-		return
-	}
-	if peerIdx != 0 {
-		c.DownloadRequest(ctx, &entities.Peer{
-			IP:   response.AvailablePeers[peerIdx-1].IP,
-			Port: response.AvailablePeers[peerIdx-1].Port,
-		}, filename)
-	}
+	return response.AvailablePeers, filename, nil
 }
 
-func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer, filename string) {
+func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.Peer, filename string) error {
 	client, err := createPeerStreamClient(peer)
 
 	if err != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
-		return
+		return errors.New(fmt.Sprintf("Fail to perform DOWNLOAD action. Failed to create client: %s \n", err.Error()))
 	}
 
 	stream, err := client.DownloadFile(ctx, &messages.DownloadFileArgs{FileName: filename})
 	if err != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
-		return
+		return errors.New(fmt.Sprintf("Fail to perform DOWNLOAD action: %s \n", err.Error()))
 	}
 
 	done := make(chan bool)
@@ -164,34 +156,80 @@ func (c *NapsterPeerClient) DownloadRequest(ctx context.Context, peer *entities.
 				break
 			}
 			fileBytes = append(fileBytes, response.FileBytes...)
+			fmt.Printf("Downloading %d/%d... \n", response.Partition, response.TotalPartitions)
 		}
 	}()
 
 	<-done
 	if downloadErr != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action: %s \n", err.Error())
-		return
+		return errors.New(fmt.Sprintf("Fail to perform DOWNLOAD action: %s \n", downloadErr.Error()))
 	}
 
 	// TODO: trigger update request after download
 	file, err := os.Create(c.filePath + "/" + filename)
 	if err != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
-		return
+		return errors.New(fmt.Sprintf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error()))
 	}
 	_, err = file.Write(fileBytes)
 	if err != nil {
-		fmt.Printf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error())
-		return
+		return errors.New(fmt.Sprintf("Fail to perform DOWNLOAD action. Failed to create file: %s \n", err.Error()))
 	}
 
-	fmt.Println("DONWLOAD_OK")
-	c.UpdateRequest(ctx, filename)
+	return nil
 }
 
 func (c *NapsterPeerClient) UpdateRequest(ctx context.Context, file string) {
 	args := &messages.UpdateArgs{PeerId: c.selfId, NewFile: file}
 	c.client.Update(ctx, args)
+}
+
+func (c *NapsterPeerClient) attemptDownload(ctx context.Context, reader *bufio.Reader) {
+	peers, filename, err := c.SearchRequest(ctx, reader)
+	if err == ERR_NO_PEERS_AVAILABLE {
+		fmt.Println("No peers available")
+		return
+	}
+	if err != nil {
+		fmt.Printf("Fail to perform DOWNLOAD %s \n", err.Error())
+		return
+	}
+
+	maxAttempts := len(peers) * 3
+	unusedPeers := make([]*messages.Peer, len(peers))
+	copy(unusedPeers, peers)
+
+	for i := 0; i < maxAttempts; i++ {
+		peer := &messages.Peer{}
+		peer, unusedPeers = selectPeer(unusedPeers)
+
+		fmt.Printf("Attempting to download from %s:%d\n", peer.IP, peer.Port)
+
+		err = c.DownloadRequest(ctx, &entities.Peer{
+			IP:   peer.IP,
+			Port: peer.Port,
+		}, filename)
+
+		if err == nil {
+			fmt.Println("DOWNLOAD_OK")
+			c.UpdateRequest(ctx, filename)
+			break
+		}
+		if err == utils.DOWNLOAD_NEGADO {
+			fmt.Println("Download denied")
+		} else {
+			fmt.Printf("Failed to perform DOWNLOAD: %s \n", err.Error())
+		}
+
+		if len(unusedPeers) == 0 {
+			if i == maxAttempts-1 {
+				fmt.Println("Tried every peer available three times. Unable to perform DOWNLOAD")
+			} else {
+				copy(unusedPeers, peers)
+				fmt.Println("Failed to download for every peer. Will retry in 30 seconds")
+				time.Sleep(30 * time.Second)
+			}
+		}
+	}
 }
 
 func createPeerStreamClient(peer *entities.Peer) (napsterProto.NapsterPeerClient, error) {
@@ -213,4 +251,18 @@ func readInput(reader *bufio.Reader) string {
 	}
 
 	return strings.Replace(input, "\n", "", -1)
+}
+
+func selectPeer(peers []*messages.Peer) (*messages.Peer, []*messages.Peer) {
+	idx := utils.RandomInt(len(peers) - 1)
+	peer := peers[idx]
+
+	withoutSelected := []*messages.Peer{}
+	for i, p := range peers {
+		if i != idx {
+			withoutSelected = append(withoutSelected, p)
+		}
+	}
+
+	return peer, withoutSelected
 }
