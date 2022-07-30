@@ -29,24 +29,24 @@ func (ka *NapsterServerKeepAliveClient) Start() {
 		}
 
 		for _, peer := range peers {
+			if !peer.Active {
+				continue
+			}
+
 			client, err := createGrpcClient(peer.IP, peer.Port)
 			if err != nil {
 				continue
 			}
 
 			_, err = client.IsAlive(ka.ctx, &emptypb.Empty{})
-			if err == nil && !peer.Active {
-				peer.Active = true
-				err = ka.dal.UpdatePeer(ka.ctx, peer)
-				if err != nil {
-					fmt.Printf("Fail to inactivate peer %s error: %s \n", peer.ID.String(), err.Error())
-				}
+			if err == nil {
+				continue
 			} else {
 				ka.failedAttemptsMap[peer.ID.String()] += 1
 				if ka.failedAttemptsMap[peer.ID.String()] >= 3 {
 					ka.failedAttemptsMap[peer.ID.String()] = 0
 					peer.Active = false
-					err = ka.dal.UpdatePeer(ka.ctx, peer)
+					err = ka.dal.DeletePeerAndFiles(ka.ctx, peer.ID)
 					if err != nil {
 						fmt.Printf("Fail to inactivate peer %s error: %s \n", peer.ID.String(), err.Error())
 					}
