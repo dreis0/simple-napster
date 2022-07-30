@@ -101,6 +101,11 @@ func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
 }
 
 func (c *NapsterPeerClient) LeaveRequest(ctx context.Context) {
+	if !c.isInNetwork() {
+		fmt.Println("Peer is not in any network")
+		return
+	}
+
 	args := &messages.LeaveArgs{PeerId: c.selfId}
 
 	_, err := c.client.Leave(ctx, args)
@@ -184,6 +189,11 @@ func (c *NapsterPeerClient) UpdateRequest(ctx context.Context, file string) {
 }
 
 func (c *NapsterPeerClient) attemptDownload(ctx context.Context, reader *bufio.Reader) {
+	if !c.isInNetwork() {
+		fmt.Println("Peer is not in any network")
+		return
+	}
+
 	peers, filename, err := c.SearchRequest(ctx, reader)
 	if err == ERR_NO_PEERS_AVAILABLE {
 		fmt.Println("No peers available")
@@ -243,16 +253,6 @@ func createPeerStreamClient(peer *entities.Peer) (napsterProto.NapsterPeerClient
 	return napsterProto.NewNapsterPeerClient(conn), nil
 }
 
-func readInput(reader *bufio.Reader) string {
-	input, err := reader.ReadString('\n')
-
-	if err != nil {
-		panic(err)
-	}
-
-	return strings.Replace(input, "\n", "", -1)
-}
-
 func selectPeer(peers []*messages.Peer) (*messages.Peer, []*messages.Peer) {
 	idx := utils.RandomInt(len(peers) - 1)
 	peer := peers[idx]
@@ -265,4 +265,18 @@ func selectPeer(peers []*messages.Peer) (*messages.Peer, []*messages.Peer) {
 	}
 
 	return peer, withoutSelected
+}
+
+func readInput(reader *bufio.Reader) string {
+	input, err := reader.ReadString('\n')
+
+	if err != nil {
+		panic(err)
+	}
+
+	return strings.Replace(input, "\n", "", -1)
+}
+
+func (c *NapsterPeerClient) isInNetwork() bool {
+	return c.selfId != ""
 }
