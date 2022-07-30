@@ -54,7 +54,6 @@ func (sl *NapsterServerListener) Start() {
 	}
 }
 
-// Join TODO: check if bun correctly sets IDs and see how is the data in the database after a JOIN request
 func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinArgs) (*messages.JoinResponse, error) {
 	fmt.Printf("Join request received \n peer_ip: %s \n peer_port: %d \n", args.IP, args.Port)
 
@@ -63,6 +62,7 @@ func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinAr
 		Active: true,
 		IP:     args.IP,
 	}
+
 	err := sl.dal.AddPeer(ctx, peer)
 	if err != nil {
 		fmt.Printf("Error when trying to persist peer: %s", err.Error())
@@ -74,17 +74,22 @@ func (sl *NapsterServerListener) Join(ctx context.Context, args *messages.JoinAr
 		files[i] = &entities.File{Name: f}
 	}
 
-	err = sl.dal.AddFilesIfNew(ctx, files)
-	if err != nil {
-		fmt.Printf("Error when adding new peer files: %s", err.Error())
-		return nil, err
+	if len(args.Files) > 0 {
+		err = sl.dal.AddFilesIfNew(ctx, files)
+		if err != nil {
+			fmt.Printf("Error when adding new peer files: %s", err.Error())
+			sl.dal.DeletePeerAndFiles(ctx, peer.ID)
+			return nil, err
+		}
+
+		err = sl.dal.AddFilesToPeer(ctx, peer, files)
+		if err != nil {
+			fmt.Printf("Error when associating files with peer: %s", err.Error())
+			sl.dal.DeletePeerAndFiles(ctx, peer.ID)
+			return nil, err
+		}
 	}
 
-	err = sl.dal.AddFilesToPeer(ctx, peer, files)
-	if err != nil {
-		fmt.Printf("Error when associating files with peer: %s", err.Error())
-		return nil, err
-	}
 	return &messages.JoinResponse{Id: peer.ID.String()}, nil
 }
 
