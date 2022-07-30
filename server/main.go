@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"simple-napster/dal"
@@ -9,7 +10,8 @@ import (
 )
 
 func main() {
-
+	godotenv.Load(".env")
+	
 	args := os.Args
 	portStr, err := utils.GetArgument(args, "port")
 	if err != nil {
