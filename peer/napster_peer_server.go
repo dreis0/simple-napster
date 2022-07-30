@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"simple-napster/dal"
 	"simple-napster/protos/messages"
 	services "simple-napster/protos/services"
 	"simple-napster/utils"
@@ -20,7 +19,6 @@ import (
 type NapsterPeerServer struct {
 	services.UnimplementedNapsterPeerServer
 
-	dal      dal.ClientDal
 	filePath string
 
 	listener   net.Listener
@@ -32,8 +30,8 @@ type NapsterPeerServerConfig struct {
 	FilePath string
 }
 
-func NewNapsterPeerServer(config *NapsterPeerServerConfig, dal dal.ClientDal) *NapsterPeerServer {
-	server := &NapsterPeerServer{dal: dal, filePath: config.FilePath}
+func NewNapsterPeerServer(config *NapsterPeerServerConfig) *NapsterPeerServer {
+	server := &NapsterPeerServer{filePath: config.FilePath}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Port))
 	if err != nil {

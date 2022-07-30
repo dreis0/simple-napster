@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/joho/godotenv"
 	"os"
-	"simple-napster/dal"
 	"simple-napster/utils"
 	"strconv"
 )
@@ -41,7 +40,6 @@ func main() {
 		panic("invalid server port provided")
 	}
 
-	dal := createDal()
 	peer := NewNapsterPeer(
 		&NapsterPeerConfig{
 			ServerIp:   serverIp,
@@ -49,20 +47,7 @@ func main() {
 			SelfPort:   portNum,
 			FilePath:   files_path,
 		},
-		dal,
 	)
 
 	peer.Start()
-}
-
-func createDal() dal.ClientDal {
-	config := &dal.Config{
-		Hostname: "localhost",
-		Port:     5432,
-		Password: "postgres",
-		Username: "postgres",
-		Database: "napster",
-	}
-	dal := dal.NewDal(config)
-	return dal
 }

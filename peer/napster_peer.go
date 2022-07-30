@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"simple-napster/dal"
 	"sync"
 )
 
@@ -18,10 +17,10 @@ type NapsterPeer struct {
 	server *NapsterPeerServer
 }
 
-func NewNapsterPeer(config *NapsterPeerConfig, dal dal.ClientDal) *NapsterPeer {
+func NewNapsterPeer(config *NapsterPeerConfig) *NapsterPeer {
 	return &NapsterPeer{
 		client: NewPeerClient(&NapsterPeerClientConfig{SelfPort: config.SelfPort, ServerIp: config.ServerIp, ServerPort: config.ServerPort, FilePath: config.FilePath}),
-		server: NewNapsterPeerServer(&NapsterPeerServerConfig{Port: config.SelfPort, FilePath: config.FilePath}, dal),
+		server: NewNapsterPeerServer(&NapsterPeerServerConfig{Port: config.SelfPort, FilePath: config.FilePath}),
 	}
 }
 
