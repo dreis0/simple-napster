@@ -224,17 +224,17 @@ func (c *NapsterPeerClient) attemptDownload(ctx context.Context, reader *bufio.R
 			c.UpdateRequest(ctx, filename)
 			break
 		}
-		if err == utils.DOWNLOAD_NEGADO {
+		if strings.Contains(err.Error(), utils.DOWNLOAD_NEGADO.Error()) {
 			fmt.Println("Download denied")
 		} else {
 			fmt.Printf("Failed to perform DOWNLOAD: %s \n", err.Error())
 		}
 
 		if len(unusedPeers) == 0 {
-			if i == maxAttempts-1 {
+			if i == maxAttempts-1 || len(peers) == 0 {
 				fmt.Println("Tried every peer available three times. Unable to perform DOWNLOAD")
 			} else {
-				copy(unusedPeers, peers)
+				unusedPeers = append(unusedPeers, peers...)
 				fmt.Println("Failed to download for every peer. Will retry in 30 seconds")
 				time.Sleep(30 * time.Second)
 			}
