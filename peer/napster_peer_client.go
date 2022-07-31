@@ -79,6 +79,11 @@ func (c *NapsterPeerClient) Start() {
 }
 
 func (c *NapsterPeerClient) JoinRequest(ctx context.Context) {
+	if c.selfId != "" {
+		fmt.Println("Already in network.")
+		return
+	}
+
 	files, err := ioutil.ReadDir(c.filePath)
 	if err != nil {
 		fmt.Printf("Fail to perform JOIN action. Cannot read files: %s \n", err.Error())
